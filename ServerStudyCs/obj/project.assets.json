@@ -14,9 +14,9 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\epsel\\source\\repos\\ServerStudyCs\\ServerStudyCs\\ServerStudyCs.csproj",
-      "projectName": "ServerStudyCs",
-      "projectPath": "C:\\Users\\epsel\\source\\repos\\ServerStudyCs\\ServerStudyCs\\ServerStudyCs.csproj",
+      "projectUniqueName": "C:\\Users\\epsel\\source\\repos\\ServerStudyCs\\ServerStudyCs\\ServerCore.csproj",
+      "projectName": "ServerCore",
+      "projectPath": "C:\\Users\\epsel\\source\\repos\\ServerStudyCs\\ServerStudyCs\\ServerCore.csproj",
       "packagesPath": "C:\\Users\\epsel\\.nuget\\packages\\",
       "outputPath": "C:\\Users\\epsel\\source\\repos\\ServerStudyCs\\ServerStudyCs\\obj\\",
       "projectStyle": "PackageReference",

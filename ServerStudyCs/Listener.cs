@@ -5,18 +5,25 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ServerStudyCs
+namespace ServerCore
 {
-    class Listener
+    public class Listener
     {
 
         Socket _listenSocket;
-        Action<Socket> _OnAcceptHandler;
+        /// <summary>
+        /// 이 녀석은 Action으로 Socket에 관련된 처리를 하는데 해당 처리를 변경하여 Func로 진행
+        /// </summary>
+        /// Action<Socket> _OnAcceptHandler;
 
-        public void Init(IPEndPoint endPoint, int backlog, Action<Socket> OnAcceptHandler)
+        
+        /// Func 는 return Type 이 있다.
+        Func<Session> _sessionFactory;
+
+        public void Init(IPEndPoint endPoint, int backlog, Func<Session> sessionFactory)
         {
             _listenSocket = new Socket(endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            _OnAcceptHandler = OnAcceptHandler;
+            _sessionFactory = sessionFactory;
 
             _listenSocket.Bind(endPoint);
             _listenSocket.Listen(backlog);
@@ -52,7 +59,9 @@ namespace ServerStudyCs
 
             if (args.SocketError == SocketError.Success)
             {
-                _OnAcceptHandler.Invoke(args.AcceptSocket);
+                Session session = _sessionFactory.Invoke();
+                session.Start(args.AcceptSocket);
+                session.OnConneceted(args.AcceptSocket.RemoteEndPoint);
             }
             else
             {

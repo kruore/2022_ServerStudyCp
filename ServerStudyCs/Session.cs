@@ -4,23 +4,38 @@ using System.Linq;
 using System.Text;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using System.Net;
 
-namespace ServerStudyCs
+namespace ServerCore
 {
-    class Session
+    public abstract class Session
     {
         Socket _socket;
         int _disconnected = 0;
+
+        object _lock = new object();
+        Queue<byte[]> _sendQueue = new Queue<byte[]>();
+        bool _pending = false;
+
+
+        List<ArraySegment<byte>> _sendPendingList = new List<ArraySegment<byte>>();
+        SocketAsyncEventArgs _recvArgs = new SocketAsyncEventArgs();
+        SocketAsyncEventArgs _sendArgs = new SocketAsyncEventArgs();
+
+        abstract public void OnConneceted(EndPoint endpoint);
+        abstract public void OnSend(int numOfBytes);
+        abstract public void OnRecv(ArraySegment<byte> buffer);
+        abstract public void OnDiscoonected(EndPoint endPoint);
         public void Start(Socket socket)
         {
             _socket = socket;
-            SocketAsyncEventArgs recvArgs = new SocketAsyncEventArgs();
-            recvArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnRecvCompleted);
-            recvArgs.UserToken = this;
-            // 버퍼 세팅 버퍼는 이거구, offset부터 1024 사이즈까지
-            recvArgs.SetBuffer(new byte[1024], 0, 1024);
 
-            RegisterRecv(recvArgs);
+            _recvArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnRecvCompleted);
+            _recvArgs.SetBuffer(new byte[1024], 0, 1024);
+            // 버퍼 세팅 버퍼는 이거구, offset부터 1024 사이즈까지
+
+            _sendArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnSendCompleted);
+            RegisterRecv();
         }
 
         public void Disconnect()
@@ -32,38 +47,113 @@ namespace ServerStudyCs
             // 같은 아이가 2번 디스커넥트 하는 환경을 조성하지 않도록
             // 디스커넥트의 체크를 lock을 통해 진행하는 것이 좋다.
 
-            if (Interlocked.Exchange(ref _disconnected, 1)==1)
+            if (Interlocked.Exchange(ref _disconnected, 1) == 1)
             {
+                OnDiscoonected(_socket.RemoteEndPoint);
                 _socket.Shutdown(SocketShutdown.Both);
                 _socket.Close();
             }
         }
-
         public void Send(byte[] sendBuff)
         {
-            _socket.Send(sendBuff);
+
+            lock (_lock)
+            {
+                _sendQueue.Enqueue(sendBuff);
+
+                if (_sendPendingList.Count == 0)
+                {
+                    RegisterSend();
+                }
+            }
+            // 버퍼 세팅 버퍼는 이거구, offset부터 1024 사이즈까지
         }
-        #region Recv Data Region
-        public void RegisterRecv(SocketAsyncEventArgs args)
+        #region Data Send Region
+        public void RegisterSend()
         {
-            bool pending = _socket.ReceiveAsync(args);
+            while (_sendQueue.Count > 0)
+            {
+                byte[] buff = _sendQueue.Dequeue();
+
+                //C++ 이었다면 포인터를 통해서 진행했겠지만 여긴 C#
+                // 따라서 배열의 첫 위치만을 알 수 있다.
+                // 그래서 배열의 첫번째, 사이즈, 길이를 알려주어 값을 구한다.
+
+                //ArraySegment 는 구조체라서 메모리가 아닌 힙의 영역에 올라간다.
+                _sendPendingList.Add(new ArraySegment<byte>(buff, 0, buff.Length));
+            }
+            _sendArgs.BufferList = _sendPendingList;
+
+            //버퍼리스트는 모든 목록을 가지고 있을 것이다.
+
+            bool pending = _socket.SendAsync(_sendArgs);
+            if (pending == false)
+            {
+                OnSendCompleted(null, _sendArgs);
+            }
+        }
+        public void OnSendCompleted(object sender, SocketAsyncEventArgs args)
+        {
+            lock (_lock)
+            {
+                if (args.BytesTransferred > 0 && args.SocketError == SocketError.Success)
+                {
+                    try
+                    {
+
+
+                        _sendArgs.BufferList = null;
+                        _sendPendingList.Clear();
+                        OnSend(_sendArgs.BytesTransferred);
+                        Console.WriteLine($"Transfered : Bytes {args.BytesTransferred.ToString()}");
+
+                        // 만약  _sendPending 에서의 시간에 다른 스레드가 집어넣는다면.
+                        if (_sendPendingList.Count > 0)
+                        {
+                            RegisterSend();
+                        }
+                        else
+                        {
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+
+                    }
+
+                }
+                else
+                {
+                    // 전송을 했는데 상대가 못 받는 상태라면...
+                    Disconnect();
+                }
+            }
+        }
+      
+
+        #endregion
+
+        #region Recv Data Region
+        public void RegisterRecv()
+        {
+            bool pending = _socket.ReceiveAsync(_recvArgs);
 
             if (pending == false)
             {
-                OnRecvCompleted(null, args);
+                OnRecvCompleted(null, _recvArgs);
             }
+
         }
 
         public void OnRecvCompleted(object sender, SocketAsyncEventArgs args)
         {
-
+            // 만약 전송 된 바이트의 수가 0보다 크고, 소켓이 Success 라면..
             if (args.BytesTransferred > 0 && args.SocketError == SocketError.Success)
             {
                 try
                 {
-                    string recvData = Encoding.UTF32.GetString(args.Buffer, args.Offset, args.BytesTransferred);
-                    RegisterRecv(args);
-                    Console.WriteLine(recvData);
+                    OnRecv(new ArraySegment<byte>(args.Buffer, args.Offset, args.BytesTransferred));
+                    RegisterRecv();
                 }
                 catch (Exception ex)
                 {
@@ -72,6 +162,7 @@ namespace ServerStudyCs
             }
             else
             {
+                Disconnect();
             }
 
         }

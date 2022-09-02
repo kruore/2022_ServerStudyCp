@@ -3,10 +3,39 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Text;
-
+using ServerCore;
 
 namespace DummyClient
 {
+    class GameSession : Session
+    {
+        public override void OnConneceted(EndPoint endpoint)
+        {
+            Console.WriteLine("OnConnected");
+
+            for (int i = 0; i < 5; i++)
+            {
+                byte[] sendBuff = Encoding.UTF32.GetBytes("Welecome to KINLAB");
+                Send(sendBuff);
+            }
+        }
+
+        public override void OnDiscoonected(EndPoint endPoint)
+        {
+            Console.WriteLine("OnDisconnected");
+        }
+
+        public override void OnRecv(ArraySegment<byte> buffer)
+        {
+            string recvData = Encoding.UTF32.GetString(buffer.Array, buffer.Offset, buffer.Count);
+            Console.WriteLine(recvData);
+        }
+
+        public override void OnSend(int numOfBytes)
+        {
+        }
+    }
+
     public class DummyClient
     {
         static void Main(string[] args)
@@ -18,32 +47,18 @@ namespace DummyClient
             IPAddress ipAddr = ipHost.AddressList[0];
             IPEndPoint endpoint = new IPEndPoint(ipAddr, 4545);
 
+            Connector connector = new Connector();
+            connector.Connect(endpoint, () => { return new GameSession(); });
 
+            Func<Session> sessionFactory;
 
             while (true)
             {
+                //소켓은 새로운 접속을 진행할 때 마다 한번 씩 집어넣어 해결해야한다.
+                Socket server = new Socket(endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 try
                 {
-                    //소켓은 새로운 접속을 진행할 때 마다 한번 씩 집어넣어 해결해야한다.
-                    Socket server = new Socket(endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                  
-                    // EndPoint 로 소켓의 접속을 진행  
-                    server.Connect(endpoint);
-                    Console.WriteLine(server.RemoteEndPoint.ToString());
 
-                    // 보낸다.
-                    byte[] sendBuff = Encoding.UTF32.GetBytes("Welcome to yokoso japparipark a~");
-                    server.Send(sendBuff);
-
-                    // 받는다.
-                    byte[] recvBuff = new byte[1024];
-                    int recvBytes = server.Receive(recvBuff);
-                    string data = Encoding.UTF32.GetString(recvBuff, 0, recvBytes);
-                    Console.WriteLine(data);
-
-
-                    server.Shutdown(SocketShutdown.Both);
-                    server.Close();
                 }
                 catch (Exception ex)
                 {

@@ -13,3 +13,6 @@ C:\Users\epsel\source\repos\ServerStudyCs\DummyClient\obj\Debug\net6.0\DummyClie
 C:\Users\epsel\source\repos\ServerStudyCs\DummyClient\obj\Debug\net6.0\ref\DummyClient.dll
 C:\Users\epsel\source\repos\ServerStudyCs\DummyClient\obj\Debug\net6.0\DummyClient.pdb
 C:\Users\epsel\source\repos\ServerStudyCs\DummyClient\obj\Debug\net6.0\DummyClient.genruntimeconfig.cache
+C:\Users\epsel\source\repos\ServerStudyCs\DummyClient\bin\Debug\net6.0\ServerCore.dll
+C:\Users\epsel\source\repos\ServerStudyCs\DummyClient\bin\Debug\net6.0\ServerCore.pdb
+C:\Users\epsel\source\repos\ServerStudyCs\DummyClient\obj\Debug\net6.0\DummyClient.csproj.CopyComplete

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "ITd+X2ZnlNvYasDdwy8sbj3uFA67WlPrHuZs+vi5C4r+crwNYhEEcs0PYu1tIVrULchWuk4dRGq5DgsmHRpDmA==",
+  "dgSpecHash": "uMLiv8tqBPiuNa/p8pYICP7sVAUGOvTFhKUfr6GiAwJu7XJV2SNMq2I/2WH+y0lgRyMRz1QxlXPdzy+CEOSJfw==",
   "success": true,
-  "projectFilePath": "C:\\Users\\epsel\\source\\repos\\ServerStudyCs\\ServerStudyCs\\ServerStudyCs.csproj",
+  "projectFilePath": "C:\\Users\\epsel\\source\\repos\\ServerStudyCs\\ServerStudyCs\\ServerCore.csproj",
   "expectedPackageFiles": [],
   "logs": []
 }
